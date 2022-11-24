@@ -49,6 +49,32 @@ Metadata Refresh Pro was created to keep ads running longer and making each clon
 4️⃣ Get a ready-made unique video creative
 
 '''
+
+eopt = '''
+The video is downloaded. Choose ways to edit.
+    1) Installing a transparent and invisible mesh
+    2) Small color correction for gamma, saturation and contrast
+    3) Replacing music with another, no copyright (joyful)
+    4) Replacing music with another, no copyright (disturbing)
+    5) Removing metadata
+    6) Reducing video fps by 10-15 frames
+    7) Crop video by 10-30% at the beginning and at the end
+    8) Acceleration of the audio track by 5-10%'
+'''
+faq = '''
+❔Can I upload multiple video creatives at once?
+❕Video creatives are loaded and uniqueized one at a time, that is, 1 unique = 1 video creative.
+❔How long does it take to unify?
+❕On average, up to 5 minute
+❔Are there any requirements for the downloaded files?
+❕Format: mp4 / avi. File size: up to 500 MB.
+Files up to 20 MB are uploaded without compression directly to the bot.
+Files ranging in size from 20 to 500 MB must first be uploaded to Google Drive, then copy the link to
+the file and upload it to the bot.
+❔How to contact support?
+❕You are welcome to ask questions about the bot and payment via Telegram @zefiagency
+'''
+
 stripe_key = '284685063:TEST:Nzg4ODRhNGVkYzU3'
 def editVideo(path,chat_id,edits):
     l=None
@@ -186,6 +212,15 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
         btn = [[InlineKeyboardButton('Unlimited creative',callback_data='payment')],[InlineKeyboardButton('back',callback_data='home')]]
         await update.effective_chat.send_message('List of our tariffs:\n\nUnlimited Creatives- $9 per month',reply_markup=InlineKeyboardMarkup(btn))
         return
+    
+    elif update.message.text == 'Tech. Support💻':
+        await update.effective_chat.send_message("!?️ Ask your questions about the bot, operation and payment via Telegram @zefiagency")
+        return
+    elif update.message.text == 'FAQ ❓':
+        await update.effective_chat.send_message(faq)
+        return
+    elif update.message.text == 'About Bot 🤖':
+        await start(update,context)
 
 async def fileHandler(update:Update,context:ContextTypes.DEFAULT_TYPE):
 
@@ -213,16 +248,8 @@ async def fileHandler(update:Update,context:ContextTypes.DEFAULT_TYPE):
                     context.user_data.clear()
                     context.user_data['file'] = f.file_path.split('videos/')[1]
                     print(context.user_data['file'])
-                    msg = 'The video is downloaded. Choose ways to edit.\n\
-                            1) Installing a transparent and invisible mesh\n\
-                            2) Small color correction for gamma, saturation and contrast\n\
-                            3) Replacing music with another, no copyright (joyful)\n\
-                            4) Replacing music with another, no copyright (disturbing)\n\
-                            5) Removing metadata\n\
-                            6) Reducing video fps by 10-15 frames\n\
-                            7) Crop video by 10-30% at the beginning and at the end\n\
-                            8) Acceleration of the audio track by 5-10%'
-                    await update.effective_chat.send_message(msg)
+
+                    await update.effective_chat.send_message(eopt)
                     await update.effective_chat.send_message('Set checkboxes on the options you like',reply_markup=InlineKeyboardMarkup(editBtns()))
                     return
 
