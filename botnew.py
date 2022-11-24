@@ -1,7 +1,7 @@
-
-from telegram.ext.updater import Updater
+from telegram import Update
+from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, CallbackQueryHandler,filters
 from telegram import *
-from telegram.ext import *
+
 import pandas as pd
 #from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, CallbackContext
 import json
@@ -125,7 +125,8 @@ def accelerateAudio(clip):
 
 def colorCorrection(clip):
     #small color correction for gamma saturation and contrast
-    clip = clip.fx(vfx.lum_contrast,255,255,127)
+    clip = clip.fx(vfx.lum_contrast)
+    #clip = clip.fx(vfx.colorx,1.05)
     return clip
 
 def installMesh(path):
@@ -160,33 +161,33 @@ def editBtns():
              ]
     return buttons
 
-def start(update: Update, context: CallbackContext):
-    update.effective_chat.send_message(startmsg,reply_markup=ReplyKeyboardMarkup(mainBtn(),resize_keyboard=True))
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.effective_chat.send_message(startmsg,reply_markup=ReplyKeyboardMarkup(mainBtn(),resize_keyboard=True))
     return
 
 
-def msgHandler(update: Update, context: CallbackContext):
+async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
     
     if update.message.text == 'Upload a video🎥':
         #check userplan
         msg = 'To switch to the mode of uploading video to the bot, click on the button below. The bot sees your file only in this mode.'
         inlinebtn = [[InlineKeyboardButton('Upload video mode',callback_data='videoMode')]]
         
-        update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(inlinebtn))
+        await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(inlinebtn))
         return
     
     elif update.message.text == '❌ Cancel':
         context.user_data.clear()
-        start(update,context)
+        await start(update,context)
         return
     
     elif update.message.text == 'Tariffs and payment💳':
         # check if user is registered or not!
         btn = [[InlineKeyboardButton('Unlimited creative',callback_data='payment')],[InlineKeyboardButton('back',callback_data='home')]]
-        update.effective_chat.send_message('List of our tariffs:\n\nUnlimited Creatives- $9 per month',reply_markup=InlineKeyboardMarkup(btn))
+        await update.effective_chat.send_message('List of our tariffs:\n\nUnlimited Creatives- $9 per month',reply_markup=InlineKeyboardMarkup(btn))
         return
 
-def fileHandler(update:Update,context:CallbackContext):
+async def fileHandler(update:Update,context:ContextTypes.DEFAULT_TYPE):
 
     if 'mode' in context.user_data.keys():
             print("yes")    
@@ -195,18 +196,23 @@ def fileHandler(update:Update,context:CallbackContext):
                 v = update.message.video
                 print(v)
                 if 'mp4' not in v['mime_type']:
-                    update.effective_chat.send_message("Wrong format media!")
+                    await update.effective_chat.send_message("Wrong format media!")
                     context.user_data.clear()
                     start(update,context)
                     return
                 else:
-                    update.effective_chat.send_message("We have received you video, it is now downloading!")
+                    await update.effective_chat.send_message("We have received you video, it is now downloading!")
                     #f = context.bot.getFile(v['file_id']).download()
-                    f = File(v['file_id'],v['file_unique_id'])
-                    f.download_to_memory()
+                    #f = File(v['file_id'],v['file_unique_id'])
+                    f = await context.bot.get_file(v['file_id'])
+                    
+                    await f.download_to_memory()
+                    #await f.download_to_memory()
                     print(f)
+                    print("\n\n",f.file_path)
                     context.user_data.clear()
-                    context.user_data['file'] = f
+                    context.user_data['file'] = f.file_path.split('videos/')[1]
+                    print(context.user_data['file'])
                     msg = 'The video is downloaded. Choose ways to edit.\n\
                             1) Installing a transparent and invisible mesh\n\
                             2) Small color correction for gamma, saturation and contrast\n\
@@ -216,12 +222,12 @@ def fileHandler(update:Update,context:CallbackContext):
                             6) Reducing video fps by 10-15 frames\n\
                             7) Crop video by 10-30% at the beginning and at the end\n\
                             8) Acceleration of the audio track by 5-10%'
-                    update.effective_chat.send_message(msg)
-                    update.effective_chat.send_message('Set checkboxes on the options you like',reply_markup=InlineKeyboardMarkup(editBtns()))
+                    await update.effective_chat.send_message(msg)
+                    await update.effective_chat.send_message('Set checkboxes on the options you like',reply_markup=InlineKeyboardMarkup(editBtns()))
                     return
 
 
-def queryHandler(update: Update,context: CallbackContext):
+async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query.data
 
     editoptions = ['Installing mesh',
@@ -239,13 +245,13 @@ def queryHandler(update: Update,context: CallbackContext):
         msg = 'Choose how you want to send your video in telegram chat or link to google Drive.'
         ibutton = [[InlineKeyboardButton('Telegram chat',callback_data='telegramUpload'),InlineKeyboardButton('Google Drive',callback_data='googleUpload')]]
         btn = [[KeyboardButton('❌ Cancel')]]
-        update.effective_chat.send_message('You have unlimited tariff.',reply_markup=ReplyKeyboardMarkup(btn,resize_keyboard=True))
-        update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(ibutton))
-        update.callback_query.answer('video editing mode activated!')
+        await update.effective_chat.send_message('You have unlimited tariff.',reply_markup=ReplyKeyboardMarkup(btn,resize_keyboard=True))
+        await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(ibutton))
+        await update.callback_query.answer('video editing mode activated!')
         return
     
     elif query == 'telegramUpload':
-        update.effective_chat.send_message("Upload a video to the chat (maximum 20MB) without compression ⚠️ Format: mp4 / avi")
+        await update.effective_chat.send_message("Upload a video to the chat (maximum 20MB) without compression ⚠️ Format: mp4 / avi")
         context.user_data['mode'] = 'telegramVideo'
         return
     
@@ -266,7 +272,7 @@ def queryHandler(update: Update,context: CallbackContext):
                         buttons.append([InlineKeyboardButton(txt,callback_data=editoptions[i])])
 
                 buttons.append([InlineKeyboardButton("CONFIRM",callback_data="sendEdit")])
-                update.effective_chat.send_message('set checkboxes on the options you like',reply_markup=InlineKeyboardMarkup(buttons))
+                await update.effective_chat.send_message('set checkboxes on the options you like',reply_markup=InlineKeyboardMarkup(buttons))
                 print(context.user_data['edit'])
                 return
 
@@ -281,7 +287,7 @@ def queryHandler(update: Update,context: CallbackContext):
                         txt = str(i)+") {0} {1}".format('❌',editoptions[i])
                         buttons.append([InlineKeyboardButton(txt,callback_data=editoptions[i])])
                 buttons.append([InlineKeyboardButton("CONFIRM",callback_data="sendEdit")])
-                update.effective_chat.send_message('set checkboxes on the options you like',reply_markup=InlineKeyboardMarkup(buttons))
+                await update.effective_chat.send_message('set checkboxes on the options you like',reply_markup=InlineKeyboardMarkup(buttons))
                 return
         else:
             context.user_data['edit'] = []
@@ -296,16 +302,16 @@ def queryHandler(update: Update,context: CallbackContext):
                     txt = str(i)+") {0} {1}".format('❌',editoptions[i])
                     buttons.append([InlineKeyboardButton(txt,callback_data=editoptions[i])])            
             buttons.append([InlineKeyboardButton("CONFIRM",callback_data="sendEdit")])
-            update.effective_chat.send_message('set checkboxes on the options you like',reply_markup=InlineKeyboardMarkup(buttons))
+            await update.effective_chat.send_message('set checkboxes on the options you like',reply_markup=InlineKeyboardMarkup(buttons))
             return
     elif query == 'sendEdit':
-        update.effective_chat.send_message('video editing process started! Please wait.')
+        await update.effective_chat.send_message('video editing process started! Please wait.')
         elist = context.user_data['edit']
         f = context.user_data['file']
 
         f = editVideo(f,str(update.effective_chat.id),elist)
         with open(f,'rb') as sfile:
-            update.effective_chat.send_video(sfile)
+            await update.effective_chat.send_video(sfile)
         
         context.user_data.clear()
     
@@ -333,7 +339,7 @@ def queryHandler(update: Update,context: CallbackContext):
 
 
 
-def preCheckout(update:Update,context:CallbackContext):
+def preCheckout(update:Update,context:ContextTypes.DEFAULT_TYPE):
     """Answers the PreQecheckoutQuery, important to handel payment"""
     query = update.pre_checkout_query
     # check the payload, is this from your bot?
@@ -343,7 +349,7 @@ def preCheckout(update:Update,context:CallbackContext):
     else:
         query.answer(ok=True)
 
-def paymentSuccess(update: Update, context: CallbackContext):
+def paymentSuccess(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Confirms the successful payment. this method is invoked after a successful payment"""
     
     update.message.reply_text("We have received your payment, Thank you!")
@@ -361,13 +367,16 @@ def paymentSuccess(update: Update, context: CallbackContext):
 
 
 
-application = Updater(soullabs)
-dispatcher = application.dispatcher
-dispatcher.add_handler(CommandHandler("start", start))
-dispatcher.add_handler(MessageHandler(filters=Filters.video,callback=fileHandler))
-dispatcher.add_handler(MessageHandler(filters=Filters.text,callback=msgHandler))
-dispatcher.add_handler(CallbackQueryHandler(queryHandler))
-dispatcher.add_handler(PreCheckoutQueryHandler(preCheckout))
-dispatcher.add_handler(MessageHandler(filters=Filters.successful_payment,callback=paymentSuccess))
-#dispatcher.add_handler(WebAppData(data, button_text, _kwargs))
-application.start_polling()
+if __name__ == '__main__':
+    application = ApplicationBuilder().token(soullabs).concurrent_updates(True).build()
+    
+    start_handler = CommandHandler('start', start)
+    file_handler = MessageHandler(filters.VIDEO,fileHandler)
+    msg_handler = MessageHandler(filters.TEXT,msgHandler)
+    query_handler = CallbackQueryHandler(queryHandler)
+    application.add_handler(start_handler)
+    application.add_handler(file_handler)
+    application.add_handler(msg_handler)
+    application.add_handler(query_handler)
+    
+    application.run_polling()
