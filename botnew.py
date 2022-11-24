@@ -63,7 +63,7 @@ def editVideo(path,chat_id,edits):
                 clip,l = replaceMusicJoyful(clip)
                 continue
             elif _ == 'Replacing music (disturbing)':
-                pass
+                clip,l = replaceMusicJoyful(clip)
             elif _ == 'Removing metadata':
                 clip = removeMetadata(clip)
             elif _ == 'Reducing video fps':
