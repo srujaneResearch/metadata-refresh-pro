@@ -24,6 +24,7 @@ from urllib.parse import quote
 import socket
 import requests
 import random
+import os
 telegram_url = 'https://api.telegram.org/bot'+soullabs
 from dateutil import relativedelta
 startmsg='''
@@ -124,7 +125,9 @@ def crop(clip):
 
 
 def replaceMusicJoyful(clip):
-    l = AudioFileClip('joy.mp3')
+    gtc = os.path.dirname(__file__)
+    au = os.path.join(gtc,'joy.mp3')
+    l = AudioFileClip(au)
     m = afx.audio_loop(l,duration=clip.duration)
     clip = clip.set_audio(m)
     #final = clip.write_videofile('{0}.avi'.format(chat_id),fps=clip.fps,codec='libx264')
