@@ -1,10 +1,9 @@
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, CallbackQueryHandler,filters
 from telegram import *
-
-import pandas as pd
 #from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, CallbackContext
 import json
+#soullabs = "5540797060:AAEuYIQzk4LaWXkG8BJWNdGRt_-qlAvcZss"
 soullabs = "5855809302:AAGaZX7__rCZsbb_pqu0VAm2r76HO1pcqhU"
 #updater = Updater(soullabs,use_context=True)
 import logging
@@ -16,7 +15,6 @@ logging.basicConfig(
 from moviepy.editor import VideoFileClip,AudioFileClip,CompositeAudioClip,afx,vfx
 import urllib
 import time
-import pyodbc
 import locale
 #import util
 from datetime import datetime, timedelta
@@ -25,6 +23,8 @@ import socket
 import requests
 import random
 import os
+import sqlite3 as sq
+
 telegram_url = 'https://api.telegram.org/bot'+soullabs
 from dateutil import relativedelta
 startmsg='''
@@ -53,14 +53,15 @@ Metadata Refresh Pro was created to keep ads running longer and making each clon
 
 eopt = '''
 The video is downloaded. Choose ways to edit.
-    1) Installing a transparent and invisible mesh
-    2) Small color correction for gamma, saturation and contrast
-    3) Replacing music with another, no copyright (joyful)
-    4) Replacing music with another, no copyright (disturbing)
-    5) Removing metadata
-    6) Reducing video fps by 10-15 frames
-    7) Crop video by 10-30% at the beginning and at the end
-    8) Acceleration of the audio track by 5-10%'
+
+1) Installing a transparent and invisible mesh
+2) Small color correction for gamma, saturation and contrast
+3) Replacing music with another, no copyright (joyful)
+4) Replacing music with another, no copyright (disturbing)
+5) Removing metadata
+6) Reducing video fps by 10-15 frames
+7) Crop video by 10-30% at the beginning and at the end
+8) Acceleration of the audio track by 5-10%'
 '''
 faq = '''
 ❔Can I upload multiple video creatives at once?
@@ -76,7 +77,36 @@ the file and upload it to the bot.
 ❕You are welcome to ask questions about the bot and payment via Telegram @zefiagency
 '''
 
+notpaid = 'Unfortunately, your plan has expired! You can order a new tariff in the main menu!'
+
 stripe_key = '284685063:TEST:Nzg4ODRhNGVkYzU3'
+
+base = os.path.dirname(__file__)
+db = os.path.join(base,'users')
+
+def executeSql(query,type=None):
+    con = sq.connect("telegram.db")
+    cur = con.cursor()
+    
+    if type == None:
+        l = cur.execute(query).fetchall()
+        #con.commit()
+        con.close()
+        return l
+    else:
+        cur.execute(query)
+        con.commit()
+        con.close()
+
+def checkPayment(chat_id):
+    l = executeSql("select payment_status from users where chat_id={0}".format(chat_id))
+    
+    l = [x[0] for x in l]
+    if l == 100:
+        return True
+    else:
+        return False
+
 def editVideo(path,chat_id,edits):
     l=None
     with VideoFileClip(path) as clip:
@@ -191,19 +221,32 @@ def editBtns():
     return buttons
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.effective_chat.send_message(startmsg,reply_markup=ReplyKeyboardMarkup(mainBtn(),resize_keyboard=True))
+    
+    
+    l = await update.effective_chat.send_message(startmsg,reply_markup=ReplyKeyboardMarkup(mainBtn(),resize_keyboard=True))
+    user = executeSql("select chat_id from users")
+    user = [x[0] for x in user]
+    if l.chat.id not in user:
+        executeSql("insert into users (chat_id) values({0})".format(l.chat.id),'commit')
     return
 
 
 async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
+    print(update)
     
     if update.message.text == 'Upload a video🎥':
         #check userplan
-        msg = 'To switch to the mode of uploading video to the bot, click on the button below. The bot sees your file only in this mode.'
-        inlinebtn = [[InlineKeyboardButton('Upload video mode',callback_data='videoMode')]]
-        
-        await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(inlinebtn))
-        return
+        if checkPayment(update.effective_chat.id):
+
+            msg = 'To switch to the mode of uploading video to the bot, click on the button below. The bot sees your file only in this mode.'
+            inlinebtn = [[InlineKeyboardButton('Upload video mode',callback_data='videoMode')]]
+            
+            m = await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(inlinebtn))
+            context.user_data['p_m'] = m.message_id
+            return
+        else:
+            await update.effective_chat.send_message(notpaid)
+            return
     
     elif update.message.text == '❌ Cancel':
         context.user_data.clear()
@@ -212,10 +255,16 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
     
     elif update.message.text == 'Tariffs and payment💳':
         # check if user is registered or not!
-        btn = [[InlineKeyboardButton('Unlimited creative',callback_data='payment')],[InlineKeyboardButton('back',callback_data='home')]]
-        await update.effective_chat.send_message('List of our tariffs:\n\nUnlimited Creatives- $9 per month',reply_markup=InlineKeyboardMarkup(btn))
-        return
-    
+
+        if checkPayment(update.effective_chat.id) == False:
+            btn = [[InlineKeyboardButton('Unlimited creative',callback_data='payment')],[InlineKeyboardButton('back',callback_data='home')]]
+            u = await update.effective_chat.send_message('List of our tariffs:\n\nUnlimited Creatives- $9 per month',reply_markup=InlineKeyboardMarkup(btn))
+            print(u.message_id)
+            return
+        else:
+            msg = 'You have already purchased a tariff:\nunlimited Creatives.\n\nNumber of remaining to be edited videos: 999'
+            btn = [[InlineKeyboardButton('Customer portal',url='')]]
+            await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(btn))
     elif update.message.text == 'Tech. Support💻':
         await update.effective_chat.send_message("!?️ Ask your questions about the bot, operation and payment via Telegram @zefiagency")
         return
@@ -231,6 +280,7 @@ async def fileHandler(update:Update,context:ContextTypes.DEFAULT_TYPE):
             print("yes")    
             allowed = ['mp4','MP4','avi']
             if context.user_data['mode'] == 'telegramVideo':
+
                 v = update.message.video
                 print(v)
                 if 'mp4' not in v['mime_type']:
@@ -253,7 +303,8 @@ async def fileHandler(update:Update,context:ContextTypes.DEFAULT_TYPE):
                     print(context.user_data['file'])
 
                     await update.effective_chat.send_message(eopt)
-                    await update.effective_chat.send_message('Set checkboxes on the options you like',reply_markup=InlineKeyboardMarkup(editBtns()))
+                    m=await update.effective_chat.send_message('Set checkboxes on the options you like',reply_markup=InlineKeyboardMarkup(editBtns()))
+                    context.user_data['p_m'] = m.message_id
                     return
 
 
@@ -275,14 +326,18 @@ async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
         msg = 'Choose how you want to send your video in telegram chat or link to google Drive.'
         ibutton = [[InlineKeyboardButton('Telegram chat',callback_data='telegramUpload'),InlineKeyboardButton('Google Drive',callback_data='googleUpload')]]
         btn = [[KeyboardButton('❌ Cancel')]]
+        await context.bot.deleteMessage(chat_id=update.effective_chat.id,message_id=context.user_data['p_m'])
         await update.effective_chat.send_message('You have unlimited tariff.',reply_markup=ReplyKeyboardMarkup(btn,resize_keyboard=True))
-        await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(ibutton))
+        m = await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(ibutton))
+        context.user_data['p_m'] = m.message_id
         await update.callback_query.answer('video editing mode activated!')
         return
     
     elif query == 'telegramUpload':
-        await update.effective_chat.send_message("Upload a video to the chat (maximum 20MB) without compression ⚠️ Format: mp4 / avi")
+        await context.bot.deleteMessage(chat_id=update.effective_chat.id,message_id=context.user_data['p_m'])
+        m = await update.effective_chat.send_message("Upload a video to the chat (maximum 20MB) without compression ⚠️ Format: mp4 / avi")
         context.user_data['mode'] = 'telegramVideo'
+        context.user_data['p_m'] = m.message_id
         return
     
     elif query in editoptions:
@@ -302,8 +357,10 @@ async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
                         buttons.append([InlineKeyboardButton(txt,callback_data=editoptions[i])])
 
                 buttons.append([InlineKeyboardButton("CONFIRM",callback_data="sendEdit")])
-                await update.effective_chat.send_message('set checkboxes on the options you like',reply_markup=InlineKeyboardMarkup(buttons))
+                await context.bot.deleteMessage(update.effective_chat.id,context.user_data['p_m'])
+                m = await update.effective_chat.send_message('set checkboxes on the options you like',reply_markup=InlineKeyboardMarkup(buttons))
                 print(context.user_data['edit'])
+                context.user_data['p_m'] = m.message_id
                 return
 
             else:
@@ -317,7 +374,10 @@ async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
                         txt = str(i)+") {0} {1}".format('❌',editoptions[i])
                         buttons.append([InlineKeyboardButton(txt,callback_data=editoptions[i])])
                 buttons.append([InlineKeyboardButton("CONFIRM",callback_data="sendEdit")])
-                await update.effective_chat.send_message('set checkboxes on the options you like',reply_markup=InlineKeyboardMarkup(buttons))
+                await context.bot.deleteMessage(update.effective_chat.id,context.user_data['p_m'])
+
+                m = await update.effective_chat.send_message('set checkboxes on the options you like',reply_markup=InlineKeyboardMarkup(buttons))
+                context.user_data['p_m'] = m.message_id
                 return
         else:
             context.user_data['edit'] = []
@@ -332,10 +392,16 @@ async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
                     txt = str(i)+") {0} {1}".format('❌',editoptions[i])
                     buttons.append([InlineKeyboardButton(txt,callback_data=editoptions[i])])            
             buttons.append([InlineKeyboardButton("CONFIRM",callback_data="sendEdit")])
-            await update.effective_chat.send_message('set checkboxes on the options you like',reply_markup=InlineKeyboardMarkup(buttons))
+            await context.bot.deleteMessage(update.effective_chat.id,context.user_data['p_m'])
+
+            m = await update.effective_chat.send_message('set checkboxes on the options you like',reply_markup=InlineKeyboardMarkup(buttons))
+            context.user_data['p_m'] = m.message_id
             return
     elif query == 'sendEdit':
-        await update.effective_chat.send_message('video editing process started! Please wait.')
+        await context.bot.deleteMessage(update.effective_chat.id,context.user_data['p_m'])
+
+        m = await update.effective_chat.send_message('video editing process started! Please wait.')
+        context.user_data['p_m'] = m.message_id
         elist = context.user_data['edit']
         f = context.user_data['file']
 
