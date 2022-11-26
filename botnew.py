@@ -82,10 +82,10 @@ notpaid = 'Unfortunately, your plan has expired! You can order a new tariff in t
 stripe_key = '284685063:TEST:Nzg4ODRhNGVkYzU3'
 
 base = os.path.dirname(__file__)
-db = os.path.join(base,'users')
+db = os.path.join(base,'telegram.db')
 
 def executeSql(query,type=None):
-    con = sq.connect("telegram.db")
+    con = sq.connect(db)
     cur = con.cursor()
     
     if type == None:
@@ -99,12 +99,16 @@ def executeSql(query,type=None):
         con.close()
 
 def checkPayment(chat_id):
+    con = sq.connect(db)
+    cur = con.cursor()
     l = executeSql("select payment_status from users where chat_id={0}".format(chat_id))
     
     l = [x[0] for x in l]
     if l == 100:
+        con.close()
         return True
     else:
+        con.close()
         return False
 
 def editVideo(path,chat_id,edits):
