@@ -30,7 +30,7 @@ import os
 import sqlite3 as sq
 
 telegram_url = 'https://api.telegram.org/bot'+soullabs
-from dateutil import relativedelta
+
 startmsg='''
 🤖🎥 Bring Videos and Images Back To Life In Minutes (without the algo knowing)
 
