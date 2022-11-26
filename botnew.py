@@ -3,6 +3,10 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, Messa
 from telegram import *
 #from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, CallbackContext
 import json
+import stripe
+import psycopg2
+stripe.api_key = "sk_test_51M2rqGITV27aYUdhCpJp3IUmIHF9RgbZUUVHdbanHPA85wgiaYMjWg8OJbaGYuwpehdAzJ0DjJ3vLEMy98a4nFZl00V7kFy5x4"
+
 #soullabs = "5540797060:AAEuYIQzk4LaWXkG8BJWNdGRt_-qlAvcZss"
 soullabs = "5855809302:AAGaZX7__rCZsbb_pqu0VAm2r76HO1pcqhU"
 #updater = Updater(soullabs,use_context=True)
@@ -85,21 +89,39 @@ base = os.path.dirname(__file__)
 db = os.path.join(base,'telegram.db')
 
 def executeSql(query,type=None):
-    con = sq.connect(db)
-    cur = con.cursor()
-    
-    if type == None:
-        l = cur.execute(query).fetchall()
-        #con.commit()
+    try:
+        con = psycopg2.connect(database='postgres',
+                                host='31.220.17.29',
+                                user='soul',
+                                password='soul.1234',
+                                port='5432'
+                                )
+
+        cur = con.cursor()
+        
+        if type == None:
+            cur.execute(query)
+            l = cur.fetchall()
+            #con.commit()
+            con.close()
+            return l
+        else:
+            cur.execute(query)
+            con.commit()
+            con.close()
+    except:
         con.close()
-        return l
-    else:
-        cur.execute(query)
-        con.commit()
-        con.close()
+        print("Error Occured in database")
+        return []
 
 def checkPayment(chat_id):
-    con = sq.connect(db)
+    con = psycopg2.connect(database='postgres',
+                            host='31.220.17.29',
+                            user='soul',
+                            password='soul.1234',
+                            port='5432'
+                            )
+
     cur = con.cursor()
     l = executeSql("select payment_status from users where chat_id={0}".format(chat_id))
     
@@ -417,24 +439,21 @@ async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
     
     elif query == 'payment':
         btn = [[InlineKeyboardButton('Go to the payment',callback_data='stripe')],[InlineKeyboardButton('Cancel',callback_data='home')]]
-        update.effective_chat.send_message("You have choosed a Unlimited Creatives tariff- $9 per month.\n Is that correct",reply_markup=InlineKeyboardMarkup(btn))
+        await update.effective_chat.send_message("You have choosed a Unlimited Creatives tariff- $9 per month.\n Is that correct",reply_markup=InlineKeyboardMarkup(btn))
         return
     elif query == 'stripe':
-        expiry = datetime.now()-relativedelta.relativedelta(month=1)
-        expiry = expiry.strftime("%y/%m/%d")
-        description = 'Unlimited Tarrif Plan\nRenews at {0}'.format(expiry)
-        btn = [[InlineKeyboardButton('Pay Now!',url='https://buy.stripe.com/test_fZe8z4d1T4wb4YocMM')]]
+        
+        msg = 'To go to the payment page, click on the "Pay" button.\n\nAfter successful payment, click on the button "Check my payment"'
+        
+        #btn = [[InlineKeyboardButton('Pay Now!',url='https://buy.stripe.com/test_fZe8z4d1T4wb4YocMM')],[InlineKeyboardButton("Check my payment",callback_data='checkPayment')]]
         #update.effective_chat.send_message("Pay Now",reply_markup=InlineKeyboardMarkup(btn))
-        '''
-        update.effective_chat.send_invoice(title='Metadata Refresh Pro\nUnlimited',
-                                            description='Unlimited Tarrif plan\n',
-                                            payload='subscription',
-                                            photo_url='https://img.freepik.com/premium-vector/bot-chat-say-hi-robots-that-are-programmed-talk-customers-online_68708-622.jpg?w=2000',
-                                            provider_token=stripe_key,
-                                            currency='USD',
-                                            prices=[LabeledPrice('Unlimited Tarrif',amount=9*100)]
-                                            )
-        '''
+
+        l = stripe.PaymentLink.create(
+            line_items=[{'price':'price_1M7LROITV27aYUdhO9icaCAR','quantity':'1'}],
+            metadata = {'chat_id':update.effective_chat.id}
+        )
+        btn = [[InlineKeyboardButton('Pay',url=str(l['url']))],[InlineKeyboardButton("Check my payment",callback_data='checkPayment')]]
+        await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(btn))
         return
 
 
