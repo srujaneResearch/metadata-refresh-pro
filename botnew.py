@@ -103,13 +103,16 @@ def executeSql(query,type=None):
             cur.execute(query)
             l = cur.fetchall()
             #con.commit()
+            cur.close()
             con.close()
             return l
         else:
             cur.execute(query)
             con.commit()
+            cur.close()
             con.close()
     except:
+        cur.close()
         con.close()
         print("Error Occured in database")
         return []
@@ -125,11 +128,14 @@ def checkPayment(chat_id):
     cur = con.cursor()
     l = executeSql("select payment_status from users where chat_id={0}".format(chat_id))
     
-    l = [x[0] for x in l]
+    l = l[0][0]
+    print(l)
     if l == 100:
+        cur.close()
         con.close()
         return True
     else:
+        cur.close()
         con.close()
         return False
 
