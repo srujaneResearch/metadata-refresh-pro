@@ -291,11 +291,16 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
         if checkPayment(update.effective_chat.id) == False:
             btn = [[InlineKeyboardButton('Unlimited creative',callback_data='payment')],[InlineKeyboardButton('back',callback_data='home')]]
             u = await update.effective_chat.send_message('List of our tariffs:\n\nUnlimited Creatives- $9 per month',reply_markup=InlineKeyboardMarkup(btn))
+
             print(u.message_id)
             return
         else:
             msg = 'You have already purchased a tariff:\nunlimited Creatives.\n\nNumber of remaining to be edited videos: 999'
-            btn = [[InlineKeyboardButton('Customer portal',url='')]]
+            
+            customer = executeSql("select customer_id from users where chat_id={0}".format(update.effective_chat.id))
+            customer = customer[0][0]
+            cus = stripe.billing_portal.Session.create(customer=customer)
+            btn = [[InlineKeyboardButton('Customer portal',url=cus['url'])]]
             await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(btn))
     elif update.message.text == 'Tech. Support💻':
         await update.effective_chat.send_message("!?️ Ask your questions about the bot, operation and payment via Telegram @zefiagency")

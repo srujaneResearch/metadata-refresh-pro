@@ -6,3 +6,7 @@ l = stripe.PaymentLink.create(
     line_items=[{'price':'price_1M7LROITV27aYUdhO9icaCAR','quantity':'1'}],
     metadata = {'chat_id':'srujan bhai'}
 )
+
+customer = 'cus_MsC3f4vKViOG0u'
+
+m = stripe.billing_portal.Session.create(customer=customer)
