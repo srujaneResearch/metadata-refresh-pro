@@ -795,7 +795,7 @@ async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
         return
     elif query == 'home':
         context.user_data.clear()
-        update.effective_chat.send_message("Payment cancel")
+        await update.effective_chat.send_message("Payment cancel")
 
     elif query == 'checkPayment':
         if checkPayment(update.effective_chat.id):
