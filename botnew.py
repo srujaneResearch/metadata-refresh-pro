@@ -199,26 +199,33 @@ def executeSql(query,type=None):
         return []
 
 def checkPayment(chat_id):
-    con = psycopg2.connect(database='postgres',
-                            host='31.220.17.29',
-                            user='soul',
-                            password='soul.1234',
-                            port='5432'
-                            )
 
-    cur = con.cursor()
-    l = executeSql("select payment_status from users where chat_id={0}".format(chat_id))
-    
-    l = l[0][0]
-    print(l)
-    if l == 100:
-        cur.close()
-        con.close()
-        return True
-    else:
+    try:
+        con = psycopg2.connect(database='postgres',
+                                host='31.220.17.29',
+                                user='soul',
+                                password='soul.1234',
+                                port='5432'
+                                )
+
+        cur = con.cursor()
+        l = executeSql("select payment_status from users where chat_id={0}".format(chat_id))
+        
+        l = l[0][0]
+        print(l)
+        if l == 100:
+            cur.close()
+            con.close()
+            return True
+        else:
+            cur.close()
+            con.close()
+            return False
+    except:
         cur.close()
         con.close()
         return False
+
 
 
 def editImage(path,chat_id,edits):
