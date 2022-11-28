@@ -793,6 +793,9 @@ async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
         btn = [[InlineKeyboardButton('Pay',url=str(l['url']))],[InlineKeyboardButton("Check my payment",callback_data='checkPayment')]]
         await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(btn))
         return
+    elif query == 'home':
+        context.user_data.clear()
+        update.effective_chat.send_message("Payment cancel")
 
 if __name__ == '__main__':
     application = ApplicationBuilder().token(soullabs).concurrent_updates(True).build()
