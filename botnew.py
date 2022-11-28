@@ -418,7 +418,7 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
             if link == '❌ Cancel':
                 context.user_data.clear()
                 await context.bot.deleteMessage(update.effective_chat.id,update.message.id)
-                await update.effective_chat.send_message("Action cancled.",replay_markup = ReplyKeyboardMarkup(mainBtn(),resize_keyboard=True))
+                await update.effective_chat.send_message("Action cancled.",reply_markup = ReplyKeyboardMarkup(mainBtn(),resize_keyboard=True))
 
             context.user_data['glink'] = link
             msg = eopt.split('\n\n')[1]
@@ -620,6 +620,8 @@ async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
         await context.bot.deleteMessage(chat_id=update.effective_chat.id,message_id=context.user_data['p_m'])
         msg = 'Your video format is mp4. Send Google Drive link.\nBe sure to set access to the file for those who have the link.\nLink format: https://drive.google.com/file/d/1aBCDEF2GhIjK3lMnop4_QrsTUVwxYzAB/view?usp=sharing'
         m = await update.effective_chat.send_message(msg)
+        with open(os.path.join(base,'drive.jpg'),'rb') as f:
+            await update.effective_chat.send_photo(f)
         
         #await update.effective_chat.send_photo()
         context.user_data['mode'] = 'googleVideo'
