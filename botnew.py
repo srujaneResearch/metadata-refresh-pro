@@ -797,6 +797,19 @@ async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
         context.user_data.clear()
         update.effective_chat.send_message("Payment cancel")
 
+    elif query == 'checkPayment':
+        if checkPayment(update.effective_chat.id):
+            msg = 'You have already purchased a tariff:\nunlimited Creatives.\n\nNumber of remaining to be edited videos: 999'
+            
+            customer = executeSql("select customer_id from users where chat_id={0}".format(update.effective_chat.id))
+            customer = customer[0][0]
+            cus = stripe.billing_portal.Session.create(customer=customer)
+            btn = [[InlineKeyboardButton('Customer portal',url=cus['url'])]]
+            await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(btn))
+            return
+        else:
+            await update.effective_chat.send_message("Error! Your transaction was not found. if you really paid, then provide proof to technical support!")
+            return
 if __name__ == '__main__':
     application = ApplicationBuilder().token(soullabs).concurrent_updates(True).build()
     
