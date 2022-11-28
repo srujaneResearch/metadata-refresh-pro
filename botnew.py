@@ -188,10 +188,12 @@ def executeSql(query,type=None):
             con.close()
             return l
         else:
+            print(query)
             cur.execute(query)
             con.commit()
             cur.close()
             con.close()
+            print("commit")
     except:
         cur.close()
         con.close()
@@ -401,7 +403,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = executeSql("select chat_id from users")
     user = [x[0] for x in user]
     if l.chat.id not in user:
-        executeSql("insert into users (chat_id) values({0})".format(l.chat.id),'commit')
+        executeSql("insert into users (chat_id) values ({0})".format(l.chat.id),'commit')
     return
 
 
@@ -742,6 +744,7 @@ async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
             context.user_data['p_m'] = m.message_id
             return
     elif query == 'sendEdit':
+        await update.callback_query.answer('Confirm!')
 
         try:
 
@@ -776,10 +779,12 @@ async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
             await update.effective_chat.send_message("Sorry, something went wrong. You may send a broken link or format of the file wrong, be sure to set access to the file for those who have link.",reply_markup=ReplyKeyboardMarkup(mainBtn(),resize_keyboard=True))
             context.user_data.clear()   
     elif query == 'payment':
+        await update.callback_query.answer('payment')
         btn = [[InlineKeyboardButton('Go to the payment',callback_data='stripe')],[InlineKeyboardButton('Cancel',callback_data='home')]]
         await update.effective_chat.send_message("You have choosed a Unlimited Creatives tariff- $9 per month.\n Is that correct",reply_markup=InlineKeyboardMarkup(btn))
         return
     elif query == 'stripe':
+        await update.callback_query.answer('')
         
         msg = 'To go to the payment page, click on the "Pay" button.\n\nAfter successful payment, click on the button "Check my payment"'
         
@@ -794,10 +799,12 @@ async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
         await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(btn))
         return
     elif query == 'home':
+        await update.callback_query.answer('cancel')
         context.user_data.clear()
         await update.effective_chat.send_message("Payment cancel")
 
     elif query == 'checkPayment':
+        await update.callback_query.answer('check payment')
         if checkPayment(update.effective_chat.id):
             msg = 'You have already purchased a tariff:\nunlimited Creatives.\n\nNumber of remaining to be edited videos: 999'
             
