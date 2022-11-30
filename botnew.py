@@ -73,8 +73,9 @@ The video is downloaded. Choose ways to edit.
 4) Replacing music with another, no copyright (disturbing)
 5) Removing metadata
 6) Reducing video fps by 10-15 frames
-7) Crop video by 10-30% at the beginning and at the end
-8) Acceleration of the audio track by 5-10%'
+7) Crop the beginning of the video by 0.1-0.15s
+8)Crop the end of the video by 0.1-0.15s
+9) Acceleration of the audio track by 5-10%
 '''
 faq = '''
 ❔Can I upload multiple video creatives at once?
@@ -248,7 +249,7 @@ def editImage(path,chat_id,edits):
 
 def imgColorCorrection(image):
     filter = ImageEnhance.Color(image)
-    img = filter.enhance(1.3)
+    img = filter.enhance(1.5)
     return img
     
 
@@ -358,7 +359,7 @@ def accelerateAudio(clip):
 def colorCorrection(clip):
     #small color correction for gamma saturation and contrast
     clip = clip.fx(vfx.lum_contrast)
-    #clip = clip.fx(vfx.colorx,1.05)
+    clip = clip.fx(vfx.colorx,1.05)
     return clip
 
 def installMesh(path):
@@ -456,7 +457,7 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
         # check if user is registered or not!
 
         if checkPayment(update.effective_chat.id) == False:
-            btn = [[InlineKeyboardButton('Unlimited creative',callback_data='payment')],[InlineKeyboardButton('back',callback_data='home')]]
+            btn = [[InlineKeyboardButton('Unlimited creative',callback_data='payment')],[InlineKeyboardButton('Back',callback_data='home')]]
             u = await update.effective_chat.send_message('List of our tariffs:\n\nUnlimited Creatives- $9 per month',reply_markup=InlineKeyboardMarkup(btn))
 
             print(u.message_id)
