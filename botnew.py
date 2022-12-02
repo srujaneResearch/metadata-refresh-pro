@@ -11,8 +11,8 @@ drive_id='1-JtstcTGro6S0S9zQqBqqKayUoTdNB0N'
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 
-#soullabs = "5540797060:AAEuYIQzk4LaWXkG8BJWNdGRt_-qlAvcZss"
-soullabs = "5855809302:AAGaZX7__rCZsbb_pqu0VAm2r76HO1pcqhU"
+soullabs = "5540797060:AAEuYIQzk4LaWXkG8BJWNdGRt_-qlAvcZss"
+#soullabs = "5855809302:AAGaZX7__rCZsbb_pqu0VAm2r76HO1pcqhU"
 #updater = Updater(soullabs,use_context=True)
 import logging
 logging.basicConfig(
@@ -20,7 +20,7 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-from moviepy.editor import VideoFileClip,AudioFileClip,CompositeAudioClip,afx,vfx
+from moviepy.editor import VideoFileClip,AudioFileClip,CompositeAudioClip,afx,vfx,VideoClip
 import urllib
 import time
 import locale
@@ -377,7 +377,8 @@ def mainBtn():
     buttons = [
         [KeyboardButton('Upload a video🎥'),KeyboardButton('Upload a image🖼️')],
         [KeyboardButton('Tariffs and payment💳'),KeyboardButton('FAQ ❓')],
-        [KeyboardButton('Tech. Support💻'),KeyboardButton('About Bot 🤖')]
+        [KeyboardButton('Tech. Support💻'),KeyboardButton('About Bot 🤖')],
+        [KeyboardButton('Referral Code🪙')]
     ]
     return buttons
 
@@ -404,7 +405,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = executeSql("select chat_id from users")
     user = [x[0] for x in user]
     if l.chat.id not in user:
-        executeSql("insert into users (chat_id) values ({0})".format(l.chat.id),'commit')
+        ran = random.randrange(2022,2100)
+        reff = "ZEFI"+str(update.effective_chat.id)+str(ran)
+        executeSql("insert into users (chat_id,referral_code) values ({0},'{1}')".format(l.chat.id,reff),'commit')
     return
 
 
@@ -495,8 +498,21 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
             return
         else:
             await update.effective_chat.send_message(notpaid)
-            return       
+            return
+    
+    elif update.message.text=='Referral Code🪙':
+        btn = [InlineKeyboardButton("Enter Referral Code",callback_data="referral")]
 
+        l = executeSql("select referral_code from users where chat_id={0}".format(update.effective_chat.id))
+        
+        l = l[0][0]
+        if l == None:
+            reff = "ZEFI"+str(update.effective_chat.id)+str(random.randrange(2022,2100))
+            executeSql("update users set referral_code='{0}' where chat_id={1}".format(reff,update.effective_chat.id),"commit")
+            await update.effective_chat.send_message("Your unique refferal code is: {0}".format(reff),reply_markup=InlineKeyboardMarkup(btn))
+        
+        else:
+            await update.effective_chat.send_message("Your unique refferal code is: {0}".format(l),reply_markup=InlineKeyboardMarkup(btn))
 
 async def fileHandler(update:Update,context:ContextTypes.DEFAULT_TYPE):
 
