@@ -419,7 +419,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ran = random.randrange(2022,2100)
         joindate = datetime.now().strftime("%Y/%m/%d")
         reff = "ZEFI"+str(update.effective_chat.id)+str(ran)
-        executeSql("insert into users (chat_id,referral_code,join_data) values ({0},'{1}','{2}')".format(l.chat.id,reff,joindate),'commit')
+        executeSql("insert into users (chat_id,referral_code,join_date) values ({0},'{1}','{2}')".format(l.chat.id,reff,joindate),'commit')
     return
 
 
