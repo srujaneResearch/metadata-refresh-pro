@@ -501,7 +501,7 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
             return
     
     elif update.message.text=='Referral Code🪙':
-        btn = [InlineKeyboardButton("Enter Referral Code",callback_data="referral")]
+        btn = [[InlineKeyboardButton("Enter Referral Code",callback_data="referral")]]
 
         l = executeSql("select referral_code from users where chat_id={0}".format(update.effective_chat.id))
         
