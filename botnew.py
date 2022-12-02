@@ -220,6 +220,7 @@ def checkPayment(chat_id):
             cur.close()
             con.close()
             return True
+
         else:
             cur.close()
             con.close()
@@ -229,6 +230,16 @@ def checkPayment(chat_id):
         con.close()
         return False
 
+def checkTrail(chat_id):
+    join = executeSql("select join_date from users where chat_id={0}".format(chat_id))
+    join=join[0][0]
+    expiry = timedelta(days=7)+join
+    tday = datetime.date(datetime.now())
+    if expiry == tday:
+        return False,0
+    else:
+        remain = (expiry-join).days
+        return True,remain
 
 
 def editImage(path,chat_id,edits):
@@ -406,8 +417,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = [x[0] for x in user]
     if l.chat.id not in user:
         ran = random.randrange(2022,2100)
+        joindate = datetime.now().strftime("%Y/%m/%d")
         reff = "ZEFI"+str(update.effective_chat.id)+str(ran)
-        executeSql("insert into users (chat_id,referral_code) values ({0},'{1}')".format(l.chat.id,reff),'commit')
+        executeSql("insert into users (chat_id,referral_code,join_data) values ({0},'{1}','{2}')".format(l.chat.id,reff,joindate),'commit')
     return
 
 
@@ -462,8 +474,21 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
             context.user_data['p_m'] = m.message_id
             return
         else:
-            await update.effective_chat.send_message(notpaid)
-            return
+            status,days = checkTrail(update.effective_chat.id) 
+            if status: 
+                await update.effective_chat.send_message("You are on trail period of 7 days. Trail period over in {0} days".format(days))
+                context.user_data['type'] = 'video'
+
+                msg = 'To switch to the mode of uploading video to the bot, click on the button below. The bot sees your file only in this mode.'
+                inlinebtn = [[InlineKeyboardButton('Upload video mode',callback_data='videoMode')]]
+            
+                m = await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(inlinebtn))
+                context.user_data['p_m'] = m.message_id
+                return                
+            else:
+
+                await update.effective_chat.send_message(notpaid)
+                return
     
     elif update.message.text == '❌ Cancel':
         context.user_data.clear()
@@ -477,11 +502,20 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
         # check if user is registered or not!
 
         if checkPayment(update.effective_chat.id) == False:
-            btn = [[InlineKeyboardButton('Unlimited creative',callback_data='payment')],[InlineKeyboardButton('Back',callback_data='home')]]
-            u = await update.effective_chat.send_message('List of our tariffs:\n\nUnlimited Creatives- $9 per month',reply_markup=InlineKeyboardMarkup(btn))
 
-            print(u.message_id)
-            return
+            status,days = checkTrail(update.effective_chat.id)
+
+            if status:
+                await update.effective_chat.send_message("You are on trail period of 7 days. Trail period over in {0} days".format(days))
+                return
+            else:
+
+                
+                btn = [[InlineKeyboardButton('Unlimited creative',callback_data='payment')],[InlineKeyboardButton('Back',callback_data='home')]]
+                u = await update.effective_chat.send_message('List of our tariffs:\n\nUnlimited Creatives- $9 per month',reply_markup=InlineKeyboardMarkup(btn))
+
+                print(u.message_id)
+                return
         else:
             msg = 'You have already purchased a tariff:\nunlimited Creatives.\n\nNumber of remaining to be edited videos: 999'
             
@@ -514,8 +548,21 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
             context.user_data['p_m'] = m.message_id
             return
         else:
-            await update.effective_chat.send_message(notpaid)
-            return
+
+            status,days = checkTrail(update.effective_chat.id)
+
+            if status:
+                await update.effective_chat.send_message("You are on trail period of 7 days. Trail period over in {0} days".format(days))
+                context.user_data['type'] = 'image'
+                msg = 'Upload an image WITHOUT COMPRESSION in PNG / JPG format up to 20 mb in size.\nYou can choose the following settings for editing\n1. Overlay invisible mesh\n2. Flip the image\n3. Minimum image zoom\n4. Remove metadata\n5. Color correctionThe bot sees your files only in this mode.'
+                inlinebtn = [[InlineKeyboardButton('Image edit mode',callback_data='imageMode')]]
+            
+                m = await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(inlinebtn))
+                context.user_data['p_m'] = m.message_id
+                return            
+            else:
+                await update.effective_chat.send_message(notpaid)
+                return
     
     elif update.message.text=='Referral Code🪙':
         btn = [[InlineKeyboardButton("Enter Referral Code",callback_data="referral"),InlineKeyboardButton("No Referral",callback_data="No Referral")]]
