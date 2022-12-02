@@ -431,7 +431,24 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
             m=await update.effective_chat.send_message('Set checkboxes on the options you like',reply_markup=InlineKeyboardMarkup(editBtns()))
             context.user_data['p_m'] = m.message_id
             return
+        elif 'referral' in context.user_data['mode']:
+            invite = update.message.text
+            l = executeSql("select chat_id where referral_code='{0}'".format(invite))
+            if len(l)==0:
+                await update.effective_chat.send_message("Invalid invite code")
+                context.user_data.clear()
+            else:
+                check = executeSql("select referred_by from users where chat_id={0}".format(update.effective_chat.id))
 
+                if len(check)!= 0 or check[0][0] == None:
+                    l = l[0][0]
+                    executeSql("update users set referred_by={0} where chat_id={1}".format(l,update.effective_chat.id),"commit")
+                    await update.effective_chat.send_message("Invite code received!")
+                    context.user_data.clear()
+                    return
+                else:
+                    await update.effective_chat.send_message("You already redeemed code!")
+                    return
 
     if update.message.text == 'Upload a video🎥':
         #check userplan
@@ -501,7 +518,7 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
             return
     
     elif update.message.text=='Referral Code🪙':
-        btn = [[InlineKeyboardButton("Enter Referral Code",callback_data="referral")]]
+        btn = [[InlineKeyboardButton("Enter Referral Code",callback_data="referral"),InlineKeyboardButton("No Referral",callback_data="No Referral")]]
 
         l = executeSql("select referral_code from users where chat_id={0}".format(update.effective_chat.id))
         
@@ -509,10 +526,12 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
         if l == None:
             reff = "ZEFI"+str(update.effective_chat.id)+str(random.randrange(2022,2100))
             executeSql("update users set referral_code='{0}' where chat_id={1}".format(reff,update.effective_chat.id),"commit")
-            await update.effective_chat.send_message("Your unique refferal code is: {0}".format(reff),reply_markup=InlineKeyboardMarkup(btn))
+            await update.effective_chat.send_message("Your unique referral code is: {0}".format(reff),reply_markup=InlineKeyboardMarkup(btn))
         
         else:
-            await update.effective_chat.send_message("Your unique refferal code is: {0}".format(l),reply_markup=InlineKeyboardMarkup(btn))
+            await update.effective_chat.send_message("Your unique referral code is: {0}".format(l),reply_markup=InlineKeyboardMarkup(btn))
+
+
 
 async def fileHandler(update:Update,context:ContextTypes.DEFAULT_TYPE):
 
@@ -836,6 +855,16 @@ async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
         else:
             await update.effective_chat.send_message("Error! Your transaction was not found. if you really paid, then provide proof to technical support!")
             return
+    
+    elif query == 'referral':
+        await update.effective_chat.send_message("Enter invite code")
+        context.user_data['mode'] = 'referral'
+        await update.callback_query.answer("refferal")
+        return
+    elif query == 'No Referral':
+        await update.callback_query.answer("Okay")
+        executeSql("update users set referred_by=0 where chat_id={0}".format(update.effective_chat.id),"commit")
+
 if __name__ == '__main__':
     application = ApplicationBuilder().token(soullabs).concurrent_updates(True).build()
     
