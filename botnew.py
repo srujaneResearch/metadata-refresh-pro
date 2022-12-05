@@ -231,7 +231,7 @@ def checkPayment(chat_id):
         return False
 
 def checkTrail(chat_id):
-    join = executeSql("select join_date from users where chat_id={0}".format(chat_id))
+    join = executeSql("select payment_date from users where chat_id={0}".format(chat_id))
     join=join[0][0]
     expiry = timedelta(days=7)+join
     tday = datetime.date(datetime.now())
@@ -425,7 +425,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ran = random.randrange(2022,2100)
         joindate = datetime.now().strftime("%Y/%m/%d")
         reff = "ZEFI"+str(update.effective_chat.id)+str(ran)
-        executeSql("insert into users (chat_id,referral_code,join_date) values ({0},'{1}','{2}')".format(l.chat.id,reff,joindate),'commit')
+        executeSql("insert into users (chat_id,referral_code,join_date,user_name,first_name) values ({0},'{1}','{2}','{3}','{4}')".format(l.chat.id,reff,joindate,update.effective_chat.username,update.effective_chat.first_name),'commit')
     return
 
 
@@ -471,18 +471,10 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
     if update.message.text == 'Upload a video🎥':
         #check userplan
         if checkPayment(update.effective_chat.id):
-            context.user_data['type'] = 'video'
 
-            msg = 'To switch to the mode of uploading video to the bot, click on the button below. The bot sees your file only in this mode.'
-            inlinebtn = [[InlineKeyboardButton('Upload video mode',callback_data='videoMode')]]
-            
-            m = await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(inlinebtn))
-            context.user_data['p_m'] = m.message_id
-            return
-        else:
-            status,days = checkTrail(update.effective_chat.id) 
-            if status: 
-                await update.effective_chat.send_message("You are on trail period of 7 days. Trail period over in {0} days".format(days))
+            status,days = checkTrail(update.effective_chat.id)
+            if status:
+                await update.effective_chat.send_message("You are on 7 day trial period. Trial will end in {0} days".format(days))
                 context.user_data['type'] = 'video'
 
                 msg = 'To switch to the mode of uploading video to the bot, click on the button below. The bot sees your file only in this mode.'
@@ -490,11 +482,20 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
             
                 m = await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(inlinebtn))
                 context.user_data['p_m'] = m.message_id
-                return                
-            else:
-
-                await update.effective_chat.send_message(notpaid)
                 return
+            else:
+                    
+                context.user_data['type'] = 'video'
+
+                msg = 'To switch to the mode of uploading video to the bot, click on the button below. The bot sees your file only in this mode.'
+                inlinebtn = [[InlineKeyboardButton('Upload video mode',callback_data='videoMode')]]
+                
+                m = await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(inlinebtn))
+                context.user_data['p_m'] = m.message_id
+                return
+        else: 
+            await update.effective_chat.send_message(notpaid)
+            return
     
     elif update.message.text == '❌ Cancel':
         context.user_data.clear()
@@ -508,20 +509,11 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
         # check if user is registered or not!
 
         if checkPayment(update.effective_chat.id) == False:
+            btn = [[InlineKeyboardButton('Unlimited creative',callback_data='payment')],[InlineKeyboardButton('Back',callback_data='home')]]
+            u = await update.effective_chat.send_message('List of our tariffs:\n\nUnlimited Creatives- $9 per month',reply_markup=InlineKeyboardMarkup(btn))
 
-            status,days = checkTrail(update.effective_chat.id)
-
-            if status:
-                await update.effective_chat.send_message("You are on trail period of 7 days. Trail period over in {0} days".format(days))
-                return
-            else:
-
-                
-                btn = [[InlineKeyboardButton('Unlimited creative',callback_data='payment')],[InlineKeyboardButton('Back',callback_data='home')]]
-                u = await update.effective_chat.send_message('List of our tariffs:\n\nUnlimited Creatives- $9 per month',reply_markup=InlineKeyboardMarkup(btn))
-
-                print(u.message_id)
-                return
+            print(u.message_id)
+            return
         else:
             msg = 'You have already purchased a tariff:\nunlimited Creatives.\n\nNumber of remaining to be edited videos: 999'
             
@@ -546,13 +538,26 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
     elif update.message.text == 'Upload a image🖼️':
 
         if checkPayment(update.effective_chat.id):
-            context.user_data['type'] = 'image'
-            msg = 'Upload an image WITHOUT COMPRESSION in PNG / JPG format up to 20 mb in size.\nYou can choose the following settings for editing\n1. Overlay invisible mesh\n2. Flip the image\n3. Minimum image zoom\n4. Remove metadata\n5. Color correctionThe bot sees your files only in this mode.'
-            inlinebtn = [[InlineKeyboardButton('Image edit mode',callback_data='imageMode')]]
+
+            status,days = checkTrail(update.effective_chat.id)
+            if status:
+                await update.effective_chat.send_message("You are on trail period of 7 days. Trail period over in {0} days".format(days))
+                context.user_data['type'] = 'image'
+                msg = 'Upload an image WITHOUT COMPRESSION in PNG / JPG format up to 20 mb in size.\nYou can choose the following settings for editing\n1. Overlay invisible mesh\n2. Flip the image\n3. Minimum image zoom\n4. Remove metadata\n5. Color correctionThe bot sees your files only in this mode.'
+                inlinebtn = [[InlineKeyboardButton('Image edit mode',callback_data='imageMode')]]
             
-            m = await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(inlinebtn))
-            context.user_data['p_m'] = m.message_id
-            return
+                m = await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(inlinebtn))
+                context.user_data['p_m'] = m.message_id
+                return 
+            else:
+
+                context.user_data['type'] = 'image'
+                msg = 'Upload an image WITHOUT COMPRESSION in PNG / JPG format up to 20 mb in size.\nYou can choose the following settings for editing\n1. Overlay invisible mesh\n2. Flip the image\n3. Minimum image zoom\n4. Remove metadata\n5. Color correctionThe bot sees your files only in this mode.'
+                inlinebtn = [[InlineKeyboardButton('Image edit mode',callback_data='imageMode')]]
+                
+                m = await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(inlinebtn))
+                context.user_data['p_m'] = m.message_id
+                return
         else:
 
             status,days = checkTrail(update.effective_chat.id)
@@ -883,8 +888,9 @@ async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
         #update.effective_chat.send_message("Pay Now",reply_markup=InlineKeyboardMarkup(btn))
 
         l = stripe.PaymentLink.create(
-            line_items=[{'price':'price_1M7LROITV27aYUdhO9icaCAR','quantity':'1'}],
-            metadata = {'chat_id':update.effective_chat.id}
+            line_items=[{'price':'price_1MBeWQITV27aYUdhGXbRLyDF','quantity':'1'}],
+            metadata = {'chat_id':update.effective_chat.id},
+            subscription_data={'trial_period_days':7},
         )
         btn = [[InlineKeyboardButton('Pay',url=str(l['url']))],[InlineKeyboardButton("Check my payment",callback_data='checkPayment')]]
         await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(btn))
