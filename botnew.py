@@ -11,8 +11,8 @@ drive_id='1-JtstcTGro6S0S9zQqBqqKayUoTdNB0N'
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 
-#soullabs = "5540797060:AAEuYIQzk4LaWXkG8BJWNdGRt_-qlAvcZss"
-soullabs = "5855809302:AAGaZX7__rCZsbb_pqu0VAm2r76HO1pcqhU"
+soullabs = "5540797060:AAEuYIQzk4LaWXkG8BJWNdGRt_-qlAvcZss"
+#soullabs = "5855809302:AAGaZX7__rCZsbb_pqu0VAm2r76HO1pcqhU"
 #updater = Updater(soullabs,use_context=True)
 import logging
 logging.basicConfig(
@@ -235,10 +235,10 @@ def checkTrail(chat_id):
     join=join[0][0]
     expiry = timedelta(days=7)+join
     tday = datetime.date(datetime.now())
-    if expiry == tday:
+    if expiry < tday:
         return False,0
     else:
-        remain = (expiry-join).days
+        remain = (expiry-tday).days
         return True,remain
 
 
@@ -292,7 +292,7 @@ def editVideo(path,chat_id,edits,fmt=None):
                 clip,l = replaceMusicJoyful(clip)
                 continue
             elif _ == 'Replacing music (disturbing)':
-                clip,l = replaceMusicJoyful(clip)
+                clip,l = replaceMusicDisturbing(clip)
             elif _ == 'Removing metadata':
                 clip = removeMetadata(clip)
             elif _ == 'Reducing video fps':
@@ -348,8 +348,14 @@ def replaceMusicJoyful(clip):
     #final = clip.write_videofile('{0}.avi'.format(chat_id),fps=clip.fps,codec='libx264')
     return clip,l
 
-def replaceMusicDisturbing(path):
-    pass
+def replaceMusicDisturbing(clip):
+    gtc = os.path.dirname(__file__)
+    au = os.path.join(gtc,'disturb.mp3')
+    l = AudioFileClip(au)
+    m = afx.audio_loop(l,duration=clip.duration)
+    clip = clip.set_audio(m)
+    #final = clip.write_videofile('{0}.avi'.format(chat_id),fps=clip.fps,codec='libx264')
+    return clip,l    
 
 def reduceFPS(clip):
     nfps = clip.fps
