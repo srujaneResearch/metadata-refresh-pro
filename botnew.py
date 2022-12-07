@@ -1,5 +1,5 @@
 from telegram import Update
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, CallbackQueryHandler,filters
+from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, CallbackQueryHandler,filters,CallbackContext
 from telegram import *
 from telegram.constants import ParseMode
 #from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, CallbackContext
@@ -35,6 +35,7 @@ import sqlite3 as sq
 import re
 from PIL import Image,ImageEnhance
 import numpy as np
+import pandas as pd
 
 
 
@@ -111,6 +112,36 @@ def imageEdits():
                 [InlineKeyboardButton("CONFIRM",callback_data="sendEdit")]          
              ]
     return buttons
+
+def adminBtn():
+    buttons = [[KeyboardButton('Set Admin'),KeyboardButton("Remove Admin")],
+    [KeyboardButton("Get Referral Sheet"),KeyboardButton("Exit")]
+    ]
+    return buttons
+
+
+def checkLifeTrial(chat_id):
+    try:
+        l = executeSql("select lifetime_trial from users where chat_id={0}".format(chat_id))
+        l = l[0][0]
+        if l=='yes':
+            return True
+        else:
+            return False
+    except:
+        return False
+
+def checkAdmin(chat_id):
+    try:
+        l = executeSql("select access_type from users where chat_id={0}".format(chat_id))
+        if l[0][0] == 'admin':
+            print("geo")
+            return True
+        else:
+            print("not")
+            return False
+    except:
+        return False
 
 def downloadFromDrive(glink,fmt):
 
@@ -428,6 +459,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         executeSql("insert into users (chat_id,referral_code,join_date,user_name,first_name) values ({0},'{1}','{2}','{3}','{4}')".format(l.chat.id,reff,joindate,update.effective_chat.username,update.effective_chat.first_name),'commit')
     return
 
+async def adminMsg(update: Update, context: CallbackContext):
+    print("admin")
+    if checkAdmin(update.effective_chat.id):        
+        await update.effective_chat.send_message("Admin mode activated",reply_markup=ReplyKeyboardMarkup(adminBtn(),resize_keyboard=True))
+
+async def lifeTrial(update: Update, context: CallbackContext):
+    print("admin")
+    if checkAdmin(update.effective_chat.id):
+        await update.effective_chat.send_message("Enter the telegram username to give lifetime free trial")
+        context.user_data['mode']='trial'
 
 async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
     print(update)
@@ -467,10 +508,49 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
                 else:
                     await update.effective_chat.send_message("You already redeemed code!")
                     return
-
+        elif context.user_data['mode']=='setAdmin':
+            user = update.message.text
+            k = executeSql("select user_name from users")
+            k = [x[0] for x in k ]
+            if user in k:
+                l = executeSql("update users set access_type='admin' where user_name='{0}'".format(user),"commit")
+                await update.effective_chat.send_message(user+" is now admin!")
+                context.user_data.clear()
+                return
+            else:
+                await update.effective_chat.send_message("No user exsit!")
+                context.user_data.clear()
+                return
+        elif context.user_data['mode']=='delAdmin':
+            user = update.message.text
+            k = executeSql("select user_name from users")
+            k = [x[0] for x in k ]
+            if user in k:
+                l = executeSql("update users set access_type='user' where user_name='{0}'".format(user),"commit")
+                await update.effective_chat.send_message(user+" is removed as admin!")
+                context.user_data.clear()
+                return
+            else:
+                await update.effective_chat.send_message("No user exsit!")
+                context.user_data.clear()
+                return
+        elif context.user_data['mode']=='trial':
+            user = update.message.text
+            k = executeSql("select user_name from users")
+            k = [x[0] for x in k ]
+            if user in k:
+                l = executeSql("update users set lifetime_trial='yes' where user_name='{0}'".format(user),"commit")
+                await update.effective_chat.send_message(user+" is set for lifetime free trial!")
+                context.user_data.clear()
+                return
+            else:
+                await update.effective_chat.send_message("No user exsit!")
+                context.user_data.clear()
+                return
     if update.message.text == 'Upload a video🎥':
         #check userplan
         if checkPayment(update.effective_chat.id):
+            
 
             status,days = checkTrail(update.effective_chat.id)
             if status:
@@ -493,7 +573,18 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
                 m = await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(inlinebtn))
                 context.user_data['p_m'] = m.message_id
                 return
-        else: 
+        else:
+
+            if checkLifeTrial(update.effective_chat.id):
+                await update.effective_chat.send_message("You are on lifetime free trial")
+                context.user_data['type'] = 'video'
+
+                msg = 'To switch to the mode of uploading video to the bot, click on the button below. The bot sees your file only in this mode.'
+                inlinebtn = [[InlineKeyboardButton('Upload video mode',callback_data='videoMode')]]
+            
+                m = await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(inlinebtn))
+                context.user_data['p_m'] = m.message_id
+                return                
             await update.effective_chat.send_message(notpaid)
             return
     
@@ -509,6 +600,8 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
         # check if user is registered or not!
 
         if checkPayment(update.effective_chat.id) == False:
+            if checkLifeTrial(update.effective_chat.id):
+                await update.effective_chat.send_message("You are on lifetime free trial")       
             btn = [[InlineKeyboardButton('Unlimited creative',callback_data='payment')],[InlineKeyboardButton('Back',callback_data='home')]]
             u = await update.effective_chat.send_message('List of our tariffs:\n\nUnlimited Creatives- $9 per month',reply_markup=InlineKeyboardMarkup(btn))
 
@@ -559,21 +652,17 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
                 context.user_data['p_m'] = m.message_id
                 return
         else:
-
-            status,days = checkTrail(update.effective_chat.id)
-
-            if status:
-                await update.effective_chat.send_message("You are on trail period of 7 days. Trail period over in {0} days".format(days))
+            if checkLifeTrial(update.effective_chat.id):
+                await update.effective_chat.send_message("You are on lifetime free trial")
                 context.user_data['type'] = 'image'
                 msg = 'Upload an image WITHOUT COMPRESSION in PNG / JPG format up to 20 mb in size.\nYou can choose the following settings for editing\n1. Overlay invisible mesh\n2. Flip the image\n3. Minimum image zoom\n4. Remove metadata\n5. Color correctionThe bot sees your files only in this mode.'
                 inlinebtn = [[InlineKeyboardButton('Image edit mode',callback_data='imageMode')]]
-            
+                
                 m = await update.effective_chat.send_message(msg,reply_markup=InlineKeyboardMarkup(inlinebtn))
                 context.user_data['p_m'] = m.message_id
-                return            
-            else:
-                await update.effective_chat.send_message(notpaid)
-                return
+                return                
+            await update.effective_chat.send_message(notpaid)
+            return
     
     elif update.message.text=='Referral Code🪙':
         btn = [[InlineKeyboardButton("Enter Referral Code",callback_data="referral"),InlineKeyboardButton("No Referral",callback_data="No Referral")]]
@@ -589,6 +678,29 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
         else:
             await update.effective_chat.send_message("Your unique referral code is: {0}".format(l),reply_markup=InlineKeyboardMarkup(btn))
 
+    elif update.message.text == 'Get Referral Sheet':
+        if checkAdmin(update.effective_chat.id):
+            l = executeSql("select * from users")
+            k = pd.DataFrame(l)
+            k.columns=['chat_id','user_name','first_name','payment_status','customer_id','referral_code','referred_by','join_date','payment_date','access_type','lifetime_trial']
+            l = k.to_csv('users.csv')
+            with open('users.csv','rb') as f:
+                await update.effective_chat.send_document(f)
+            return
+
+    elif update.message.text == 'Set Admin':
+        if checkAdmin(update.effective_chat.id):
+            context.user_data['mode'] = 'setAdmin'
+            await update.effective_chat.send_message("Type telegram username to make admin")        
+            return
+    elif update.message.text == 'Remove Admin':
+        if checkAdmin(update.effective_chat.id):
+            context.user_data['mode'] = 'delAdmin'
+            await update.effective_chat.send_message("Type telegram username to delete admin")
+            return
+    elif update.message.text == 'Exit':
+        if checkAdmin(update.effective_chat.id):
+            await start(update,context)
 
 
 async def fileHandler(update:Update,context:ContextTypes.DEFAULT_TYPE):
@@ -929,11 +1041,16 @@ if __name__ == '__main__':
     
     start_handler = CommandHandler('start', start)
     file_handler = MessageHandler(filters.VIDEO | filters.PHOTO | filters.ATTACHMENT,fileHandler)
-    msg_handler = MessageHandler(filters.TEXT,msgHandler)
+    msg_handler = MessageHandler(filters.TEXT | ~ filters.COMMAND,msgHandler)
     query_handler = CallbackQueryHandler(queryHandler)
+    admin_handler = CommandHandler('admin', adminMsg)
+    life_trial = CommandHandler('trial',lifeTrial)
     application.add_handler(start_handler)
+    application.add_handler(admin_handler)
+    application.add_handler(life_trial)
     application.add_handler(file_handler)
     application.add_handler(msg_handler)
     application.add_handler(query_handler)
+    
     
     application.run_polling()
