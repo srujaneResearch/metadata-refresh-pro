@@ -11,8 +11,8 @@ drive_id='1-JtstcTGro6S0S9zQqBqqKayUoTdNB0N'
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 
-#soullabs = "5540797060:AAEuYIQzk4LaWXkG8BJWNdGRt_-qlAvcZss"
-soullabs = "5855809302:AAGaZX7__rCZsbb_pqu0VAm2r76HO1pcqhU"
+soullabs = "5540797060:AAEuYIQzk4LaWXkG8BJWNdGRt_-qlAvcZss"
+#soullabs = "5855809302:AAGaZX7__rCZsbb_pqu0VAm2r76HO1pcqhU"
 #updater = Updater(soullabs,use_context=True)
 import logging
 logging.basicConfig(
@@ -492,8 +492,12 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
             return
         elif 'referral' in context.user_data['mode']:
             invite = update.message.text
-            l = executeSql("select chat_id where referral_code='{0}'".format(invite))
+            print()
+            print(invite)
+            l = executeSql("select chat_id from users where referral_code='{0}'".format(invite))
+               
             if len(l)==0:
+                
                 await update.effective_chat.send_message("Invalid invite code")
                 context.user_data.clear()
             else:
