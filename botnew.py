@@ -607,7 +607,7 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
             if checkLifeTrial(update.effective_chat.id):
                 await update.effective_chat.send_message("You are on lifetime free trial")       
             btn = [[InlineKeyboardButton('Unlimited creative',callback_data='payment')],[InlineKeyboardButton('Back',callback_data='home')]]
-            u = await update.effective_chat.send_message('List of our tariffs:\n\nUnlimited Creatives- $9 per month',reply_markup=InlineKeyboardMarkup(btn))
+            u = await update.effective_chat.send_message('List of our tariffs:\n\nUnlimited Creatives- $9.99 per month',reply_markup=InlineKeyboardMarkup(btn))
 
             print(u.message_id)
             return
@@ -993,7 +993,7 @@ async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
     elif query == 'payment':
         await update.callback_query.answer('payment')
         btn = [[InlineKeyboardButton('Go to the payment',callback_data='stripe')],[InlineKeyboardButton('Cancel',callback_data='home')]]
-        await update.effective_chat.send_message("You have choosed a Unlimited Creatives tariff- $9 per month.\n Is that correct",reply_markup=InlineKeyboardMarkup(btn))
+        await update.effective_chat.send_message("You have choosed a Unlimited Creatives tariff- $9.99 per month.\n Is that correct",reply_markup=InlineKeyboardMarkup(btn))
         return
     elif query == 'stripe':
         await update.callback_query.answer('')
