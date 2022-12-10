@@ -190,7 +190,7 @@ def uploadToDrive(path,id):
 
 
     drive = GoogleDrive(gauth)
-    nfile = drive.CreateFile({'parents':[{'id':id}],'title':path})
+    nfile = drive.CreateFile({'parents':[{'id':id}],'title':path,'mimetype': 'video/mp4'})
 
     nfile.SetContentFile(path)
     nfile.Upload()
@@ -339,7 +339,7 @@ def editVideo(path,chat_id,edits,fmt=None):
                 clip = accelerateAudio(clip)
                 continue
 
-        final = clip.write_videofile('{0}.mp4'.format(chat_id))
+        final = clip.write_videofile('{0}.mp4'.format(chat_id),audio_codec='aac')
         if l != None:
             l.close()
         return '{0}.mp4'.format(chat_id)            
@@ -983,9 +983,12 @@ async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
                     f = editVideo(f,str(update.effective_chat.id),elist)
             
             f_link = uploadToDrive(f,drive_id)
+            f_link = f_link.split("&export")[0]
             print("\n\n",f_link)
-            msg = "<a href='{0}'>{1}</a>".format(f_link,f_link)
-            await context.bot.send_message(update.effective_chat.id,msg,parse_mode=ParseMode.HTML,reply_markup=ReplyKeyboardMarkup(mainBtn(),resize_keyboard=True))        
+            msg='video editing is complete.\nLink to download:'
+            msg+="<a href='{0}'>{1}</a>".format(f_link,f_link)
+            #await context.bot.send_message(update.effective_chat.id,msg,parse_mode=ParseMode.HTML,reply_markup=ReplyKeyboardMarkup(mainBtn(),resize_keyboard=True))        
+            await update.effective_chat.send_message(msg,reply_markup=ReplyKeyboardMarkup(mainBtn(),resize_keyboard=True),parse_mode=ParseMode.HTML,disable_web_page_preview=True)
             context.user_data.clear()
         except:
             await update.effective_chat.send_message("Sorry, something went wrong. You may send a broken link or format of the file wrong, be sure to set access to the file for those who have link.",reply_markup=ReplyKeyboardMarkup(mainBtn(),resize_keyboard=True))
