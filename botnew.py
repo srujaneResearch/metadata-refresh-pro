@@ -457,6 +457,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         joindate = datetime.now().strftime("%Y/%m/%d")
         reff = "ZEFI"+str(update.effective_chat.id)+str(ran)
         executeSql("insert into users (chat_id,referral_code,join_date,user_name,first_name) values ({0},'{1}','{2}','{3}','{4}')".format(l.chat.id,reff,joindate,update.effective_chat.username,update.effective_chat.first_name),'commit')
+    btn = [[InlineKeyboardButton("Enter Referral Code",callback_data="referral"),InlineKeyboardButton("No Referral",callback_data="No Referral")]]
+
+    l = executeSql("select referral_code from users where chat_id={0}".format(update.effective_chat.id))
+        
+    l = l[0][0]
+    if l == None:
+        reff = "ZEFI"+str(update.effective_chat.id)+str(random.randrange(2022,2100))
+        executeSql("update users set referral_code='{0}' where chat_id={1}".format(reff,update.effective_chat.id),"commit")
+        await update.effective_chat.send_message("Your unique referral code is: {0}".format(reff),reply_markup=InlineKeyboardMarkup(btn))
+        
+    else:
+        await update.effective_chat.send_message("Your unique referral code is: {0}".format(l),reply_markup=InlineKeyboardMarkup(btn))
+
     return
 
 async def adminMsg(update: Update, context: CallbackContext):
