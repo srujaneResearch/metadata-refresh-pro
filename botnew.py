@@ -285,8 +285,11 @@ def editImage(path,chat_id,edits):
                 image = imageRemoveMetadata(image)
             elif _ == 'Color correction':
                 image = imgColorCorrection(image)
-        
-        image.save('{0}.jpg'.format(chat_id))
+        if 'png' in path.lower():
+            print("png")
+            image.save('{0}.png'.format(chat_id))
+        else:
+            image.save('{0}.jpg'.format(chat_id))
     return '{0}.jpg'.format(chat_id)
 
 def imgColorCorrection(image):
