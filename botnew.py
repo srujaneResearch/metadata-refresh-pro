@@ -188,9 +188,13 @@ def uploadToDrive(path,id):
         print("good")
         gauth.Authorize()
 
-
+    
     drive = GoogleDrive(gauth)
-    nfile = drive.CreateFile({'parents':[{'id':id}],'title':path,'mimetype': 'video/mp4'})
+    if 'png' in path.lower():
+        nfile = drive.CreateFile({'parents':[{'id':id}],'title':path,'mimetype': 'image/png'})
+    else:
+        
+        nfile = drive.CreateFile({'parents':[{'id':id}],'title':path,'mimetype': 'video/mp4'})
 
     nfile.SetContentFile(path)
     nfile.Upload()
