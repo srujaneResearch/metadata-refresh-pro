@@ -192,6 +192,8 @@ def uploadToDrive(path,id):
     drive = GoogleDrive(gauth)
     if 'png' in path.lower():
         nfile = drive.CreateFile({'parents':[{'id':id}],'title':path,'mimetype': 'image/png'})
+    elif 'jpeg' in path.lower():
+        nfile = drive.CreateFile({'parents':[{'id':id}],'title':path,'mimetype': 'image/jpeg'})
     else:
         
         nfile = drive.CreateFile({'parents':[{'id':id}],'title':path,'mimetype': 'video/mp4'})
@@ -1005,7 +1007,7 @@ async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
             f_link = uploadToDrive(f,drive_id)
             f_link = f_link.split("&export")[0]
             print("\n\n",f_link)
-            msg='video editing is complete.\nLink to download:'
+            msg='editing is complete.\nLink to download:'
             msg+="<a href='{0}'>{1}</a>".format(f_link,f_link)
             #await context.bot.send_message(update.effective_chat.id,msg,parse_mode=ParseMode.HTML,reply_markup=ReplyKeyboardMarkup(mainBtn(),resize_keyboard=True))        
             await update.effective_chat.send_message(msg,reply_markup=ReplyKeyboardMarkup(mainBtn(),resize_keyboard=True),parse_mode=ParseMode.HTML,disable_web_page_preview=True)
