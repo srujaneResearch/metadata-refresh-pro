@@ -629,7 +629,7 @@ async def msgHandler(update: Update, context:ContextTypes.DEFAULT_TYPE ):
             if checkLifeTrial(update.effective_chat.id):
                 await update.effective_chat.send_message("You are on lifetime free trial")       
             btn = [[InlineKeyboardButton('Unlimited creative',callback_data='payment')],[InlineKeyboardButton('Back',callback_data='home')]]
-            u = await update.effective_chat.send_message('List of our tariffs:\n\nUnlimited Creatives- $9.99 per month',reply_markup=InlineKeyboardMarkup(btn))
+            u = await update.effective_chat.send_message('List of our tariffs:\n\nUnlimited Creatives- $14.99 per month',reply_markup=InlineKeyboardMarkup(btn))
 
             print(u.message_id)
             return
