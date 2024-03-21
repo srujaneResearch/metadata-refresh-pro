@@ -300,9 +300,11 @@ def editImage(path,chat_id,edits):
         if 'png' in path.lower():
             print("png")
             image.save('{0}.png'.format(chat_id))
+            return '{0}.png'.format(chat_id)
         else:
             image.save('{0}.jpg'.format(chat_id))
-    return '{0}.jpg'.format(chat_id)
+            return '{0}.jpg'.format(chat_id)
+    
 
 def imgColorCorrection(image):
     filter = ImageEnhance.Color(image)
@@ -1019,6 +1021,7 @@ async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
             #await context.bot.send_message(update.effective_chat.id,msg,parse_mode=ParseMode.HTML,reply_markup=ReplyKeyboardMarkup(mainBtn(),resize_keyboard=True))        
             await update.effective_chat.send_message(msg,reply_markup=ReplyKeyboardMarkup(mainBtn(),resize_keyboard=True),parse_mode=ParseMode.HTML,disable_web_page_preview=True)
             context.user_data.clear()
+            os.remove(base+"/"+f)
         except Exception as e:
             print(e)
             await update.effective_chat.send_message("Sorry, something went wrong. You may send a broken link or format of the file wrong, be sure to set access to the file for those who have link.",reply_markup=ReplyKeyboardMarkup(mainBtn(),resize_keyboard=True))
