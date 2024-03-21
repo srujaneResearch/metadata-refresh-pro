@@ -99,7 +99,9 @@ notpaid = 'Unfortunately, your plan has expired! You can order a new tariff in t
 stripe_key = '284685063:TEST:Nzg4ODRhNGVkYzU3'
 
 base = os.path.dirname(__file__)
+# base = os.getcwd()
 db = os.path.join(base,'telegram.db')
+os.chdir(base)
 
 
 
@@ -324,6 +326,7 @@ def imageRemoveMetadata(image):
 
 def editVideo(path,chat_id,edits,fmt=None):
     l=None
+    print("editing path",path)
 
     if fmt != None:
         path = downloadFromDrive(path,fmt)
@@ -356,7 +359,7 @@ def editVideo(path,chat_id,edits,fmt=None):
                 clip = accelerateAudio(clip)
                 continue
 
-        final = clip.write_videofile('{0}.mp4'.format(chat_id),audio_codec='aac')
+        final = clip.write_videofile(base+'/{0}.mp4'.format(chat_id),audio_codec='aac')
         if l != None:
             l.close()
         return '{0}.mp4'.format(chat_id)            
