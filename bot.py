@@ -203,7 +203,7 @@ def fileHandler(update:Update,context:CallbackContext):
                     update.effective_chat.send_message("We have received you video, it is now downloading!")
                     #f = context.bot.getFile(v['file_id']).download()
                     f = File(v['file_id'],v['file_unique_id'])
-                    f.download_to_memory()
+                    f.download_to_drive()
                     print(f)
                     context.user_data.clear()
                     context.user_data['file'] = f

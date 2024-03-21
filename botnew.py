@@ -6,8 +6,10 @@ from telegram.constants import ParseMode
 import json
 import stripe
 import psycopg2
+import io
 stripe.api_key = "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"
-drive_id='1-JtstcTGro6S0S9zQqBqqKayUoTdNB0N'
+# drive_id='1-JtstcTGro6S0S9zQqBqqKayUoTdNB0N'
+drive_id = '1feeYWmiLaZGReNMk9bSLyd9du9QKHDyx'
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 
@@ -172,6 +174,8 @@ def downloadFromDrive(glink,fmt):
 
 
 def uploadToDrive(path,id):
+    print("path", path)
+
     gauth = GoogleAuth()
 
     cred = os.path.join(base,'kevin.json')
@@ -205,6 +209,7 @@ def uploadToDrive(path,id):
                             'value':'anyone',
                             'role':'reader'
                             })
+    print("file uploaded successfully")
     return nfile['webContentLink']
 
 def executeSql(query,type=None):
@@ -280,6 +285,7 @@ def checkTrail(chat_id):
 
 
 def editImage(path,chat_id,edits):
+    print("image edit path",path)
     
     with Image.open(path) as image:
         for _ in edits:
@@ -750,8 +756,8 @@ async def fileHandler(update:Update,context:ContextTypes.DEFAULT_TYPE):
                     #f = File(v['file_id'],v['file_unique_id'])
                     f = await context.bot.get_file(v['file_id'])
                     
-                    await f.download_to_memory()
-                    #await f.download_to_memory()
+                    await f.download_to_drive()
+                    #await f.download_to_drive()
                     print(f)
                     print("\n\n",f.file_path)
                     #context.user_data.clear()
@@ -779,8 +785,8 @@ async def fileHandler(update:Update,context:ContextTypes.DEFAULT_TYPE):
                     #f = File(v['file_id'],v['file_unique_id'])
                     f = await context.bot.get_file(v['file_id'])
                     
-                    await f.download_to_memory()
-                    #await f.download_to_memory()
+                    await f.download_to_drive()
+                    #await f.download_to_drive()
                     print(f)
                     print("\n\n",f.file_path)
                     #context.user_data.clear()
@@ -989,6 +995,7 @@ async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
                 elist = context.user_data['edit']
                 f = context.user_data['file']
                 f = editImage(f,update.effective_chat.id,elist)
+                print(f)
             else:
                 m = await update.effective_chat.send_message('video editing process started! Please wait.')
                 context.user_data['p_m'] = m.message_id
@@ -1004,7 +1011,7 @@ async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
 
                     f = editVideo(f,str(update.effective_chat.id),elist)
             
-            f_link = uploadToDrive(f,drive_id)
+            f_link = uploadToDrive(base+"/"+f,drive_id)
             f_link = f_link.split("&export")[0]
             print("\n\n",f_link)
             msg='editing is complete.\nLink to download:'
@@ -1012,7 +1019,8 @@ async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
             #await context.bot.send_message(update.effective_chat.id,msg,parse_mode=ParseMode.HTML,reply_markup=ReplyKeyboardMarkup(mainBtn(),resize_keyboard=True))        
             await update.effective_chat.send_message(msg,reply_markup=ReplyKeyboardMarkup(mainBtn(),resize_keyboard=True),parse_mode=ParseMode.HTML,disable_web_page_preview=True)
             context.user_data.clear()
-        except:
+        except Exception as e:
+            print(e)
             await update.effective_chat.send_message("Sorry, something went wrong. You may send a broken link or format of the file wrong, be sure to set access to the file for those who have link.",reply_markup=ReplyKeyboardMarkup(mainBtn(),resize_keyboard=True))
             context.user_data.clear()   
     elif query == 'payment':
