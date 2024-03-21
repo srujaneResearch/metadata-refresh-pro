@@ -1,7 +1,7 @@
  anyio==3.6.1
 APScheduler==3.6.3
 cachetools==4.2.2
-python-telegram-bot==13.13
+python-telegram-bot==20.7
 pytz==2022.2.1
 pytz-deprecation-shim==0.1.0.post0
 rfc3986==1.5.0
@@ -11,3 +11,8 @@ tornado==6.2
 tzdata==2022.2
 tzlocal==4.2
 pydrive
+stripe
+psycopg-binary==3.1.12
+psycopg2.binary
+moviepy
+pandas
