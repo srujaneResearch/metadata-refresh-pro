@@ -1017,8 +1017,14 @@ async def queryHandler(update: Update,context: ContextTypes.DEFAULT_TYPE):
                     f = editVideo(f,str(update.effective_chat.id),elist)
             
             f_link = uploadToDrive(base+"/"+f,drive_id)
+            print(f_link)
             f_link = f_link.split("&export")[0]
+            f_id = f_link.split("uc?")
+            print(f_id)
+
             print("\n\n",f_link)
+            f_link = f_id[0]+"uc?export=download&"+f_id[1]
+            print("final",f_link)
             msg='editing is complete.\nLink to download:'
             msg+="<a href='{0}'>{1}</a>".format(f_link,f_link)
             #await context.bot.send_message(update.effective_chat.id,msg,parse_mode=ParseMode.HTML,reply_markup=ReplyKeyboardMarkup(mainBtn(),resize_keyboard=True))        
